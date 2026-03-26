@@ -1,65 +1,111 @@
-import Image from "next/image";
+import { prisma } from "@/lib/prisma";
+import { STRENGTH_COLORS } from "@/lib/utils";
+import Link from "next/link";
 
-export default function Home() {
+function startOfWeek(): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay());
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function startOfMonth(): Date {
+  const d = new Date();
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+export default async function DashboardPage() {
+  const [total, thisWeek, thisMonth, byCategory, recent] = await Promise.all([
+    prisma.accomplishment.count(),
+    prisma.accomplishment.count({ where: { date: { gte: startOfWeek() } } }),
+    prisma.accomplishment.count({ where: { date: { gte: startOfMonth() } } }),
+    prisma.accomplishment.groupBy({
+      by: ["category"],
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+    }),
+    prisma.accomplishment.findMany({
+      orderBy: { date: "desc" },
+      take: 5,
+    }),
+  ]);
+
+  const avgStrength = total > 0
+    ? await prisma.accomplishment.aggregate({ _avg: { resumeStrength: true } })
+    : null;
+
+  const avgStr = avgStrength?._avg?.resumeStrength
+    ? avgStrength._avg.resumeStrength.toFixed(1)
+    : "—";
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div>
+      {/* Stats line */}
+      <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
+        <strong style={{ color: "var(--text)" }}>{total}</strong> total
+        {" · "}
+        <strong style={{ color: "var(--text)" }}>{thisWeek}</strong> this week
+        {" · "}
+        <strong style={{ color: "var(--text)" }}>{thisMonth}</strong> this month
+        {" · "}
+        {"★ "}<strong style={{ color: "var(--text)" }}>{avgStr}</strong> avg strength
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+        {/* Categories */}
+        <div>
+          <h2 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", marginBottom: 8 }}>
+            By Category
+          </h2>
+          {byCategory.length === 0 ? (
+            <p style={{ color: "var(--text-muted)" }}>No data yet.</p>
+          ) : (
+            byCategory.map((c) => (
+              <div key={c.category} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <div style={{ width: Math.max(4, (c._count.id / total) * 200), height: 3, background: "var(--accent)", borderRadius: 1 }} />
+                <span style={{ fontSize: 12 }}>{c.category}</span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{c._count.id}</span>
+              </div>
+            ))
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Recent */}
+        <div>
+          <h2 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", marginBottom: 8 }}>
+            Recent
+          </h2>
+          {recent.length === 0 ? (
+            <p style={{ color: "var(--text-muted)" }}>No entries yet. <Link href="/log" style={{ color: "var(--accent)" }}>Log your first win.</Link></p>
+          ) : (
+            recent.map((entry) => (
+              <Link
+                key={entry.id}
+                href={`/entry/${entry.id}`}
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 8,
+                  padding: "6px 0",
+                  borderTop: "1px solid var(--border)",
+                }}
+              >
+                <span style={{ fontSize: 11, color: "var(--text-muted)", width: 60, flexShrink: 0 }}>
+                  {entry.date.toISOString().split("T")[0]}
+                </span>
+                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {entry.title}
+                </span>
+                <span style={{ fontSize: 11, color: STRENGTH_COLORS[entry.resumeStrength] }}>
+                  {"★".repeat(entry.resumeStrength)}
+                </span>
+              </Link>
+            ))
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

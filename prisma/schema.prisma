@@ -1,0 +1,25 @@
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+model Accomplishment {
+  id             String   @id @default(cuid())
+  date           DateTime
+  title          String
+  description    String?
+  category       String
+  tools          String   @default("[]")
+  impact         String?
+  result         String?
+  timeSpent      Float?
+  tags           String   @default("[]")
+  skills         String   @default("[]")
+  resumeStrength Int      @default(3)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
