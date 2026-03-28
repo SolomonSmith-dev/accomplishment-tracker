@@ -3,7 +3,14 @@
     "allow": [
       "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --no-turbopack --import-alias \"@/*\")",
       "Bash(printf 'N\\\\nY\\\\n')",
-      "Bash(yes \"\")"
+      "Bash(yes \"\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm install:*)",
+      "Bash(npx prisma:*)",
+      "Bash(sqlite3 dev.db \".schema Accomplishment\")",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
