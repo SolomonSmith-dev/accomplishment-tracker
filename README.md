@@ -12,11 +12,31 @@ A personal tool for logging daily work wins and generating resume bullets. Built
 
 Next.js, TypeScript, Prisma, Tailwind CSS
 
+## Package Manager
+
+This project uses **npm** (`package-lock.json`). Run all commands with `npm`.
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and set the required variables:
+
+```bash
+cp .env.example .env
+```
+
+Key variables:
+
+| Variable | Description | Default |
+|---|---|---|
+| `NEXT_TELEMETRY_DISABLED` | Disable Next.js telemetry | `1` |
+| `DATABASE_URL` | Database connection string | `file:./dev.db` |
+
 ## Setup
 
 ```bash
 git clone https://github.com/SolomonSmith-dev/accomplishment-tracker
 cd accomplishment-tracker
+cp .env.example .env   # configure environment variables
 npm install
 npx prisma migrate dev
 npm run dev
