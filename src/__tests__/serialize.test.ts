@@ -38,7 +38,7 @@ describe('serialize', () => {
     const entry = fakeAccomplishment()
 
     // ACT
-    const result = serialize(entry as any)
+    const result = serialize(entry as Parameters<typeof serialize>[0])
 
     // ASSERT: date fields are now strings
     expect(typeof result.date).toBe('string')
@@ -51,7 +51,7 @@ describe('serialize', () => {
 
   it('should preserve non-date fields unchanged', () => {
     const entry = fakeAccomplishment()
-    const result = serialize(entry as any)
+    const result = serialize(entry as Parameters<typeof serialize>[0])
 
     expect(result.id).toBe(1)
     expect(result.title).toBe('Shipped feature X')
